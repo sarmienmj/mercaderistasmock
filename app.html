@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Mercaderistas ARMI</title>
+<style>
+  :root {
+    --azul: #0B5FBF;
+    --azul-oscuro: #063E80;
+    --azul-suave: #E7F0FC;
+    --rojo: #E4032E;
+    --rojo-suave: #FDEAEC;
+    --naranja: #F5A623;
+    --naranja-suave: #FFF4E0;
+    --verde: #2E9E5B;
+    --verde-suave: #E7F7EE;
+    --gris: #9AA0A6;
+    --gris-suave: #EEF0F2;
+    --texto: #26262B;
+    --texto-suave: #5B5B63;
+    --fondo: #F7F5F3;
+    --tarjeta: #FFFFFF;
+    --borde: #ECE8E5;
+    --sombra: 0 4px 16px rgba(38, 38, 43, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 12px;
+  }
+
+  .telefono {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    height: 860px;
+    max-height: calc(100vh - 48px);
+    background: var(--fondo);
+    border-radius: 32px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 8px solid #1c1c1e;
+  }
+
+  .barra-estado {
+    background: #1c1c1e;
+    color: #fff;
+    font-size: 0.72rem;
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 18px;
+    flex-shrink: 0;
+  }
+
+  .app-header {
+    background: linear-gradient(135deg, var(--azul) 0%, var(--azul-oscuro) 100%);
+    color: #fff;
+    padding: 14px 18px;
+    flex-shrink: 0;
+  }
+
+  .app-header .marca-equipo {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.35);
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+
+  .app-header h1 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+
+  .app-header .subtitulo {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    opacity: 0.9;
+  }
+
+  .app-header .volver {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 0.8rem;
+    padding: 0;
+    margin-bottom: 6px;
+    cursor: pointer;
+    opacity: 0.9;
+  }
+
+  main {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pantalla { display: none; height: 100%; }
+  .pantalla.activa { display: block; }
+
+  /* ---------- Pantalla 1: Mapa ---------- */
+
+  .mapa-envoltorio { padding: 14px; position: relative; }
+
+  /* Notificación de nueva visita */
+  .notificacion {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    top: 14px;
+    background: var(--tarjeta);
+    border-radius: 16px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    transform: translateY(-160%);
+    transition: transform 0.3s ease;
+    z-index: 40;
+  }
+
+  .notificacion.mostrar { transform: translateY(0); }
+
+  .notificacion .icono { font-size: 26px; flex-shrink: 0; }
+  .notificacion-contenido { flex: 1; min-width: 0; }
+  .notificacion-titulo { margin: 0 0 2px; font-weight: 700; font-size: 0.9rem; }
+  .notificacion-detalle { margin: 0 0 10px; font-size: 0.82rem; color: var(--texto-suave); }
+
+  .hoja-estado {
+    display: inline-block;
+    margin: 0 0 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--gris-suave);
+    color: var(--texto-suave);
+  }
+
+  .mapa-aviso {
+    background: var(--tarjeta);
+    border-radius: 14px;
+    box-shadow: var(--sombra);
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mapa {
+    position: relative;
+    height: 480px;
+    border-radius: 20px;
+    overflow: hidden;
+    background-color: #DCE7F5;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 54px, #ffffff 54px, #ffffff 62px),
+      repeating-linear-gradient(90deg, transparent, transparent 54px, #ffffff 54px, #ffffff 62px);
+    box-shadow: var(--sombra);
+  }
+
+  .mapa-zona-verde {
+    position: absolute;
+    background: #CDEBD8;
+    border-radius: 14px;
+  }
+
+  .marcador {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 3;
+  }
+
+  .pin {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--gris);
+    color: #fff;
+    border: 3px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 700;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.28);
+    cursor: pointer;
+    position: relative;
+    padding: 0;
+  }
+
+  .pin::after {
+    content: "";
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 8px 6px 0 6px;
+    border-style: solid;
+    border-color: var(--gris) transparent transparent transparent;
+  }
+
+  .pin.objetivo { background: var(--verde); }
+  .pin.objetivo::after { border-top-color: var(--verde); }
+  .pin.completada { background: var(--azul-oscuro); }
+  .pin.completada::after { border-top-color: var(--azul-oscuro); }
+
+  /* Punto "Yo" (ubicación simulada del mercaderista) */
+  .marcador-yo {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+  }
+
+  .punto-yo {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--rojo);
+    border: 3px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  /* Ruta hacia la tienda objetivo */
+  .ruta-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .ruta-svg polyline {
+    fill: none;
+    stroke: var(--azul);
+    stroke-width: 1.4;
+    stroke-linejoin: round;
+    stroke-dasharray: 3 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .marcador-nombre {
+    margin-top: 14px;
+    background: #fff;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    box-shadow: var(--sombra);
+    white-space: nowrap;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .leyenda-mapa {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 12px;
+    font-size: 0.75rem;
+    color: var(--texto-suave);
+  }
+
+  .leyenda-item { display: flex; align-items: center; gap: 5px; }
+  .leyenda-punto { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ---------- Hoja inferior (bottom sheet) ---------- */
+
+  .hoja {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--tarjeta);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.18);
+    padding: 20px 20px 24px;
+    transform: translateY(115%);
+    transition: transform 0.28s ease;
+    z-index: 30;
+  }
+
+  .hoja.mostrar { transform: translateY(0); }
+
+  .hoja-manija {
+    width: 40px;
+    height: 4px;
+    background: var(--borde);
+    border-radius: 999px;
+    margin: 0 auto 14px;
+  }
+
+  .hoja h2 { margin: 0 0 4px; font-size: 1.1rem; }
+  .hoja .direccion { margin: 0 0 12px; font-size: 0.85rem; color: var(--texto-suave); }
+
+  .hoja-dato {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.88rem;
+    padding: 8px 0;
+    border-top: 1px solid var(--borde);
+  }
+
+  .hoja-dato span:first-child { color: var(--texto-suave); }
+  .hoja-dato span:last-child { font-weight: 600; text-align: right; }
+
+  .hoja-botones {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  /* ---------- Botones genéricos ---------- */
+
+  .boton {
+    border: none;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .boton-primario { background: var(--azul); color: #fff; }
+  .boton-primario:disabled { background: var(--gris-suave); color: var(--texto-suave); cursor: not-allowed; }
+  .boton-secundario { background: var(--gris-suave); color: var(--texto); }
+  .boton-peligro { background: var(--rojo-suave); color: var(--rojo); }
+  .boton-grande { width: 100%; padding: 14px; font-size: 1rem; }
+
+  /* ---------- Pantalla 2: Formulario ---------- */
+
+  .form-envoltorio { padding: 14px; padding-bottom: 28px; }
+
+  .form-cancelar {
+    background: none;
+    border: none;
+    color: var(--azul-oscuro);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0 0 10px;
+    cursor: pointer;
+  }
+
+  .resumen-tienda {
+    background: var(--tarjeta);
+    border-radius: 14px;
+    box-shadow: var(--sombra);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+
+  .resumen-tienda h2 { margin: 0 0 4px; font-size: 1.05rem; }
+  .resumen-tienda p { margin: 0; font-size: 0.85rem; color: var(--texto-suave); }
+
+  .tarjeta-app {
+    background: var(--tarjeta);
+    border-radius: 14px;
+    box-shadow: var(--sombra);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .tarjeta-app h3 {
+    margin: 0 0 6px;
+    font-size: 0.98rem;
+  }
+
+  .tarjeta-app > p.explicacion {
+    margin: 0 0 12px;
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+  }
+
+  .estado-ok {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--verde);
+  }
+
+  .oculto { display: none !important; }
+
+  .sku-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--borde);
+  }
+
+  .sku-fila:first-of-type { border-top: none; }
+
+  .sku-info strong { display: block; font-size: 0.88rem; }
+  .sku-info span { display: block; font-size: 0.78rem; color: var(--texto-suave); margin-top: 2px; }
+
+  .sku-switch { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .switch-btn {
+    border: 1px solid var(--borde);
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--texto-suave);
+  }
+
+  .switch-btn.activo.si { background: var(--verde-suave); border-color: var(--verde); color: var(--verde); }
+  .switch-btn.activo.no { background: var(--rojo-suave); border-color: var(--rojo); color: var(--rojo); }
+
+  .resultados { display: flex; flex-direction: column; gap: 10px; }
+
+  .resultado-opcion {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    cursor: pointer;
+    border: 2px solid transparent;
+  }
+
+  .resultado-opcion input { margin-top: 3px; }
+
+  .resultado-opcion.bien { background: var(--verde-suave); }
+  .resultado-opcion.medio { background: var(--naranja-suave); }
+  .resultado-opcion.mal { background: var(--rojo-suave); }
+
+  .resultado-opcion.bien:has(input:checked) { border-color: var(--verde); }
+  .resultado-opcion.medio:has(input:checked) { border-color: var(--naranja); }
+  .resultado-opcion.mal:has(input:checked) { border-color: var(--rojo); }
+
+  .bloque-motivo { margin-top: 12px; }
+  .bloque-motivo label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; }
+
+  .bloque-motivo select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--borde);
+    font-size: 0.88rem;
+    background: #fff;
+    color: var(--texto);
+  }
+
+  /* ---------- Pantalla 3: Resumen ---------- */
+
+  .resumen-envoltorio {
+    padding: 24px 18px;
+    text-align: center;
+  }
+
+  .resumen-icono { font-size: 46px; margin-bottom: 8px; }
+
+  .resumen-envoltorio h2 { margin: 0 0 4px; }
+  .resumen-envoltorio > p.subtexto { margin: 0 0 20px; font-size: 0.88rem; color: var(--texto-suave); }
+
+  .resumen-tarjeta {
+    background: var(--tarjeta);
+    border-radius: 14px;
+    box-shadow: var(--sombra);
+    padding: 16px;
+    text-align: left;
+    margin-bottom: 18px;
+  }
+
+  .resumen-fila {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.86rem;
+    padding: 8px 0;
+    border-top: 1px solid var(--borde);
+  }
+
+  .resumen-fila:first-child { border-top: none; }
+  .resumen-fila span:first-child { color: var(--texto-suave); }
+  .resumen-fila span:last-child { font-weight: 700; text-align: right; }
+
+  .insignia {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .insignia.bien { background: var(--verde-suave); color: var(--verde); }
+  .insignia.medio { background: var(--naranja-suave); color: #8a5a00; }
+  .insignia.mal { background: var(--rojo-suave); color: var(--rojo); }
+
+</style>
+</head>
+<body>
+
+  <div class="telefono">
+    <div class="barra-estado">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <header class="app-header">
+      <button id="btn-cancelar-header" class="volver oculto" onclick="cancelarYVolverAlMapa()">‹ Cancelar visita</button>
+      <div class="marca-equipo">Transformación Comercial · ARMI</div>
+      <h1>App Mercaderista</h1>
+      <p class="subtitulo" id="subtitulo-header">App Mercaderistas ARMI</p>
+    </header>
+
+    <main>
+
+      <!-- Pantalla 1: Mapa -->
+      <section id="pantalla-mapa" class="pantalla activa">
+        <div class="mapa-envoltorio">
+
+          <div class="notificacion oculto" id="notificacion">
+            <div class="icono">🔔</div>
+            <div class="notificacion-contenido">
+              <p class="notificacion-titulo">Nueva visita asignada</p>
+              <p class="notificacion-detalle"><strong id="notificacion-tienda"></strong><br><span id="notificacion-marca"></span></p>
+              <button class="boton boton-primario boton-grande" onclick="tomarVisita()">Tomar visita</button>
+            </div>
+          </div>
+
+          <div class="mapa-aviso">
+            <span>📍</span>
+            <span>Espera la notificación de una nueva visita, o toca una tienda para ver su estado.</span>
+          </div>
+
+          <div class="mapa" id="mapa">
+            <div class="mapa-zona-verde" style="width:90px; height:70px; left:8%; top:70%;"></div>
+            <div class="mapa-zona-verde" style="width:60px; height:60px; left:70%; top:12%;"></div>
+            <svg class="ruta-svg oculto" id="ruta-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <polyline id="ruta-linea" points="" />
+            </svg>
+            <div class="marcador-yo oculto" id="marcador-yo">
+              <div class="punto-yo"></div>
+            </div>
+            <!-- Los marcadores de tienda se generan por JavaScript -->
+          </div>
+
+          <div class="leyenda-mapa">
+            <div class="leyenda-item"><span class="leyenda-punto" style="background:var(--gris)"></span>Disponible</div>
+            <div class="leyenda-item"><span class="leyenda-punto" style="background:var(--verde)"></span>Objetivo</div>
+            <div class="leyenda-item"><span class="leyenda-punto" style="background:var(--azul-oscuro)"></span>Completada</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pantalla 2: Formulario de visita -->
+      <section id="pantalla-formulario" class="pantalla">
+        <div class="form-envoltorio">
+          <button class="form-cancelar" onclick="cancelarYVolverAlMapa()">‹ Cancelar y volver al mapa</button>
+
+          <div class="resumen-tienda">
+            <h2 id="form-tienda-nombre">Tienda</h2>
+            <p id="form-tienda-detalle">Marca · Planograma</p>
+          </div>
+
+          <div class="tarjeta-app">
+            <h3>📍 Marca tu llegada</h3>
+            <p class="explicacion">Confirma que ya estás físicamente en la tienda.</p>
+            <button id="btn-llegada" class="boton boton-primario" onclick="marcarLlegada()">Marcar llegada</button>
+            <p id="estado-llegada" class="estado-ok oculto">✅ Llegada registrada</p>
+          </div>
+
+          <div class="tarjeta-app">
+            <h3>📷 Foto del "Antes"</h3>
+            <p class="explicacion">Fotografía cómo está la exhibición antes de tocar nada.</p>
+            <button id="btn-foto-antes" class="boton boton-primario" onclick="tomarFoto('antes')">Tomar foto "Antes"</button>
+            <p id="estado-foto-antes" class="estado-ok oculto">✅ Foto "Antes" guardada</p>
+          </div>
+
+          <div class="tarjeta-app">
+            <h3>🔍 Revisión de inventario</h3>
+            <p class="explicacion">Verifica si la cantidad exhibida coincide con el planograma en cada producto.</p>
+            <div id="lista-skus"></div>
+          </div>
+
+          <div class="tarjeta-app">
+            <h3>🛍️ Organiza la exhibición</h3>
+            <p class="explicacion">Si hay producto disponible, acomódalo siguiendo el planograma antes de tomar la foto final.</p>
+          </div>
+
+          <div class="tarjeta-app">
+            <h3>📷 Foto del "Después"</h3>
+            <p class="explicacion">Fotografía el resultado final de la exhibición.</p>
+            <button id="btn-foto-despues" class="boton boton-primario" onclick="tomarFoto('despues')">Tomar foto "Después"</button>
+            <p id="estado-foto-despues" class="estado-ok oculto">✅ Foto "Después" guardada</p>
+          </div>
+
+          <div class="tarjeta-app">
+            <h3>✅ Evalúa cómo está la exhibición</h3>
+            <p class="explicacion">Evalúa el estado actual de la exhibición.</p>
+            <div class="resultados">
+              <label class="resultado-opcion bien">
+                <input type="radio" name="resultado" value="implementada" onchange="actualizarConclusion()">
+                <span><strong>Implementada</strong> — está completa, tal como indica el planograma.</span>
+              </label>
+              <label class="resultado-opcion medio">
+                <input type="radio" name="resultado" value="oportunidad" onchange="actualizarConclusion()">
+                <span><strong>Implementada con oportunidad</strong> — está montada, pero tiene algún detalle pendiente de mejorar.</span>
+              </label>
+              <label class="resultado-opcion mal">
+                <input type="radio" name="resultado" value="no-implementada" onchange="actualizarConclusion()">
+                <span><strong>No implementada</strong> — no está montada correctamente.</span>
+              </label>
+            </div>
+
+            <div id="bloque-motivo" class="bloque-motivo oculto">
+              <label for="select-motivo">Motivo de la observación (obligatorio)</label>
+              <select id="select-motivo" onchange="validarFormulario()">
+                <option value="">Selecciona un motivo…</option>
+                <option>Falta material promocional</option>
+                <option>Poco inventario</option>
+                <option>Espacio insuficiente</option>
+                <option>Producto no manejado en esta tienda</option>
+                <option>Planograma mal armado</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="btn-cerrar" class="boton boton-primario boton-grande" disabled onclick="cerrarVisita()">Confirmar y cerrar visita</button>
+        </div>
+      </section>
+
+      <!-- Pantalla 3: Resumen de cierre -->
+      <section id="pantalla-resumen" class="pantalla">
+        <div class="resumen-envoltorio">
+          <div class="resumen-icono">✅</div>
+          <h2>Visita completada</h2>
+          <p class="subtexto">Este es el resumen de lo que quedó registrado.</p>
+
+          <div class="resumen-tarjeta" id="resumen-contenido">
+            <!-- Contenido generado por JavaScript -->
+          </div>
+
+          <button class="boton boton-primario boton-grande" onclick="volverAlMapaDesdeResumen()">Volver al mapa</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Hoja inferior con el detalle de la tienda seleccionada -->
+  <div class="hoja oculto" id="hoja-tienda">
+    <div class="hoja-manija"></div>
+    <h2 id="hoja-nombre">Tienda</h2>
+    <p class="direccion" id="hoja-direccion">Dirección</p>
+    <span class="hoja-estado" id="hoja-estado">Sin visita asignada</span>
+    <div class="hoja-dato"><span>Marca / proveedor</span><span id="hoja-marca"></span></div>
+    <div class="hoja-dato"><span>Planograma</span><span id="hoja-planograma"></span></div>
+    <div class="hoja-botones">
+      <button class="boton boton-secundario boton-grande" onclick="cerrarHoja()">Cerrar</button>
+    </div>
+  </div>
+
+<script>
+  // ---------------------------------------------------------------
+  // Prueba de concepto: todo el estado vive en memoria (variables JS).
+  // No hay backend, red, localStorage ni cookies — al recargar la
+  // página, todo vuelve a su estado inicial.
+  // ---------------------------------------------------------------
+
+  var tiendas = [
+    { id: 1, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Laboratorios Vitalis", planograma: "Vitaminas — Cabecera Pasillo 3", x: 22, y: 32, estado: "disponible" },
+    { id: 2, nombre: "Farmatodo El Rosal", direccion: "Calle Madrid, El Rosal", marca: "CuidadoPiel Derma", planograma: "Cuidado facial — Isla central", x: 58, y: 58, estado: "disponible" },
+    { id: 3, nombre: "Farmatodo Chacao", direccion: "Av. Francisco de Miranda, Chacao", marca: "NutriKids", planograma: "Nutrición infantil — Anaquel 2", x: 80, y: 22, estado: "disponible" }
+  ];
+
+  var iconosPin = { disponible: "🏬", objetivo: "📍", completada: "✅" };
+  var posicionYo = { x: 15, y: 88 };
+  var notificacionTiendaId = null;
+  var notificacionTimeoutId = null;
+
+  var skus = [
+    { id: 1, nombre: "Multivitamínico x30 tabletas", cantidad: "Debe haber 12 unidades exhibidas" },
+    { id: 2, nombre: "Vitamina C 1g x10 sobres", cantidad: "Debe haber 10 unidades exhibidas" },
+    { id: 3, nombre: "Complejo B x60 cápsulas", cantidad: "Debe haber 8 unidades exhibidas" },
+    { id: 4, nombre: "Omega 3 x60 cápsulas", cantidad: "Debe haber 6 unidades exhibidas" },
+    { id: 5, nombre: "Colágeno hidrolizado x300g", cantidad: "Debe haber 5 unidades exhibidas" }
+  ];
+
+  var motivos = {
+    "Falta material promocional": "🎨",
+    "Poco inventario": "📦",
+    "Espacio insuficiente": "📏",
+    "Producto no manejado en esta tienda": "🚫",
+    "Planograma mal armado": "🧩"
+  };
+
+  var tiendaSeleccionadaId = null;
+  var visita = null; // estado de la visita en curso (en memoria)
+
+  function visitaVacia() {
+    return {
+      llegada: false,
+      fotoAntes: false,
+      fotoDespues: false,
+      skuEstados: {},
+      resultado: null,
+      motivo: null
+    };
+  }
+
+  function mostrarPantalla(id) {
+    document.querySelectorAll(".pantalla").forEach(function (el) {
+      el.classList.toggle("activa", el.id === id);
+    });
+    var esFormulario = id === "pantalla-formulario";
+    document.getElementById("btn-cancelar-header").classList.toggle("oculto", !esFormulario);
+    document.getElementById("subtitulo-header").textContent = esFormulario
+      ? "Registrando visita en curso"
+      : "App Mercaderistas ARMI";
+  }
+
+  function renderizarMapa() {
+    var mapa = document.getElementById("mapa");
+    document.querySelectorAll(".marcador").forEach(function (el) { el.remove(); });
+
+    tiendas.forEach(function (tienda) {
+      var marcador = document.createElement("div");
+      marcador.className = "marcador";
+      marcador.style.left = tienda.x + "%";
+      marcador.style.top = tienda.y + "%";
+
+      marcador.innerHTML =
+        '<button class="pin ' + tienda.estado + '" onclick="tocarPin(' + tienda.id + ')">' + iconosPin[tienda.estado] + "</button>" +
+        '<div class="marcador-nombre">' + tienda.nombre + "</div>";
+
+      mapa.appendChild(marcador);
+    });
+  }
+
+  function tocarPin(id) {
+    tiendaSeleccionadaId = id;
+    var tienda = tiendas.find(function (t) { return t.id === id; });
+
+    if (tienda.estado === "objetivo") {
+      iniciarChecklist(tienda);
+    } else {
+      mostrarInfoTienda(tienda);
+    }
+  }
+
+  function mostrarInfoTienda(tienda) {
+    document.getElementById("hoja-nombre").textContent = tienda.nombre;
+    document.getElementById("hoja-direccion").textContent = tienda.direccion;
+    document.getElementById("hoja-marca").textContent = tienda.marca;
+    document.getElementById("hoja-planograma").textContent = tienda.planograma;
+    document.getElementById("hoja-estado").textContent =
+      tienda.estado === "completada" ? "Visita completada ✅" : "Sin visita asignada";
+
+    document.getElementById("hoja-tienda").classList.remove("oculto");
+    requestAnimationFrame(function () {
+      document.getElementById("hoja-tienda").classList.add("mostrar");
+    });
+  }
+
+  function cerrarHoja() {
+    var hoja = document.getElementById("hoja-tienda");
+    hoja.classList.remove("mostrar");
+    setTimeout(function () { hoja.classList.add("oculto"); }, 280);
+  }
+
+  function mostrarNotificacionSiHayDisponibles() {
+    if (tiendas.some(function (t) { return t.estado === "objetivo"; })) return;
+
+    var disponibles = tiendas.filter(function (t) { return t.estado === "disponible"; });
+    if (!disponibles.length) return;
+
+    clearTimeout(notificacionTimeoutId);
+    notificacionTimeoutId = setTimeout(function () {
+      var elegida = disponibles[Math.floor(Math.random() * disponibles.length)];
+      mostrarNotificacion(elegida.id);
+    }, 2500);
+  }
+
+  function mostrarNotificacion(id) {
+    notificacionTiendaId = id;
+    var tienda = tiendas.find(function (t) { return t.id === id; });
+
+    document.getElementById("notificacion-tienda").textContent = tienda.nombre;
+    document.getElementById("notificacion-marca").textContent = tienda.marca;
+
+    var noti = document.getElementById("notificacion");
+    noti.classList.remove("oculto");
+    requestAnimationFrame(function () { noti.classList.add("mostrar"); });
+  }
+
+  function ocultarNotificacion() {
+    var noti = document.getElementById("notificacion");
+    noti.classList.remove("mostrar");
+    setTimeout(function () { noti.classList.add("oculto"); }, 300);
+  }
+
+  function tomarVisita() {
+    var tienda = tiendas.find(function (t) { return t.id === notificacionTiendaId; });
+    tienda.estado = "objetivo";
+    ocultarNotificacion();
+    mostrarYoYRuta(tienda);
+    renderizarMapa();
+  }
+
+  function mostrarYoYRuta(tienda) {
+    var puntoYo = document.getElementById("marcador-yo");
+    puntoYo.style.left = posicionYo.x + "%";
+    puntoYo.style.top = posicionYo.y + "%";
+    puntoYo.classList.remove("oculto");
+
+    var puntos = posicionYo.x + "," + posicionYo.y + " " + tienda.x + "," + posicionYo.y + " " + tienda.x + "," + tienda.y;
+    document.getElementById("ruta-linea").setAttribute("points", puntos);
+    document.getElementById("ruta-svg").classList.remove("oculto");
+  }
+
+  function ocultarYoYRuta() {
+    document.getElementById("marcador-yo").classList.add("oculto");
+    document.getElementById("ruta-svg").classList.add("oculto");
+    document.getElementById("ruta-linea").setAttribute("points", "");
+  }
+
+  function iniciarChecklist(tienda) {
+    visita = visitaVacia();
+    document.getElementById("form-tienda-nombre").textContent = tienda.nombre;
+    document.getElementById("form-tienda-detalle").textContent = tienda.marca + " · Planograma: " + tienda.planograma;
+
+    renderizarSkus();
+    resetearControlesFormulario();
+    mostrarPantalla("pantalla-formulario");
+  }
+
+  function renderizarSkus() {
+    var lista = document.getElementById("lista-skus");
+    lista.innerHTML = "";
+
+    skus.forEach(function (sku) {
+      var fila = document.createElement("div");
+      fila.className = "sku-fila";
+      fila.innerHTML =
+        '<div class="sku-info"><strong>' + sku.nombre + '</strong><span>' + sku.cantidad + '</span></div>' +
+        '<div class="sku-switch">' +
+        '<button class="switch-btn si" onclick="marcarSku(' + sku.id + ", 'si')\">Sí</button>" +
+        '<button class="switch-btn no" onclick="marcarSku(' + sku.id + ", 'no')\">No</button>" +
+        "</div>";
+      lista.appendChild(fila);
+    });
+  }
+
+  function marcarSku(id, valor) {
+    visita.skuEstados[id] = valor;
+    var filas = document.querySelectorAll("#lista-skus .sku-fila");
+    var index = skus.findIndex(function (s) { return s.id === id; });
+    var botones = filas[index].querySelectorAll(".switch-btn");
+    botones.forEach(function (b) { b.classList.remove("activo"); });
+    filas[index].querySelector(".switch-btn." + valor).classList.add("activo");
+  }
+
+  function marcarLlegada() {
+    visita.llegada = true;
+    document.getElementById("btn-llegada").disabled = true;
+    document.getElementById("estado-llegada").classList.remove("oculto");
+    validarFormulario();
+  }
+
+  function tomarFoto(momento) {
+    if (momento === "antes") {
+      visita.fotoAntes = true;
+      document.getElementById("btn-foto-antes").disabled = true;
+      document.getElementById("estado-foto-antes").classList.remove("oculto");
+    } else {
+      visita.fotoDespues = true;
+      document.getElementById("btn-foto-despues").disabled = true;
+      document.getElementById("estado-foto-despues").classList.remove("oculto");
+    }
+    validarFormulario();
+  }
+
+  function actualizarConclusion() {
+    var seleccionado = document.querySelector('input[name="resultado"]:checked');
+    visita.resultado = seleccionado ? seleccionado.value : null;
+
+    var bloqueMotivo = document.getElementById("bloque-motivo");
+    var requiereMotivo = visita.resultado === "oportunidad" || visita.resultado === "no-implementada";
+    bloqueMotivo.classList.toggle("oculto", !requiereMotivo);
+
+    if (!requiereMotivo) {
+      document.getElementById("select-motivo").value = "";
+      visita.motivo = null;
+    }
+
+    validarFormulario();
+  }
+
+  function validarFormulario() {
+    var motivoSeleccionado = document.getElementById("select-motivo").value;
+    visita.motivo = motivoSeleccionado || null;
+
+    var requiereMotivo = visita.resultado === "oportunidad" || visita.resultado === "no-implementada";
+    var motivoListo = !requiereMotivo || !!visita.motivo;
+
+    var listo = visita.llegada && visita.fotoAntes && visita.fotoDespues && !!visita.resultado && motivoListo;
+    document.getElementById("btn-cerrar").disabled = !listo;
+  }
+
+  function resetearControlesFormulario() {
+    document.getElementById("btn-llegada").disabled = false;
+    document.getElementById("estado-llegada").classList.add("oculto");
+    document.getElementById("btn-foto-antes").disabled = false;
+    document.getElementById("estado-foto-antes").classList.add("oculto");
+    document.getElementById("btn-foto-despues").disabled = false;
+    document.getElementById("estado-foto-despues").classList.add("oculto");
+    document.querySelectorAll('input[name="resultado"]').forEach(function (r) { r.checked = false; });
+    document.getElementById("bloque-motivo").classList.add("oculto");
+    document.getElementById("select-motivo").value = "";
+    document.getElementById("btn-cerrar").disabled = true;
+  }
+
+  function cancelarYVolverAlMapa() {
+    visita = null;
+    tiendaSeleccionadaId = null;
+    mostrarPantalla("pantalla-mapa");
+  }
+
+  var etiquetasResultado = {
+    "implementada": { texto: "Implementada", clase: "bien" },
+    "oportunidad": { texto: "Implementada con oportunidad", clase: "medio" },
+    "no-implementada": { texto: "No implementada", clase: "mal" }
+  };
+
+  function cerrarVisita() {
+    var tienda = tiendas.find(function (t) { return t.id === tiendaSeleccionadaId; });
+    tienda.estado = "completada";
+    ocultarYoYRuta();
+
+    var resultado = etiquetasResultado[visita.resultado];
+    var skusConFalla = skus.filter(function (s) { return visita.skuEstados[s.id] === "no"; });
+
+    var html = "";
+    html += '<div class="resumen-fila"><span>Tienda</span><span>' + tienda.nombre + "</span></div>";
+    html += '<div class="resumen-fila"><span>Marca / proveedor</span><span>' + tienda.marca + "</span></div>";
+    html += '<div class="resumen-fila"><span>Resultado</span><span><span class="insignia ' + resultado.clase + '">' + resultado.texto + "</span></span></div>";
+
+    if (visita.motivo) {
+      html += '<div class="resumen-fila"><span>Motivo de la observación</span><span>' + motivos[visita.motivo] + " " + visita.motivo + "</span></div>";
+    }
+
+    html += '<div class="resumen-fila"><span>Productos con cantidad incorrecta</span><span>' +
+      (skusConFalla.length ? skusConFalla.map(function (s) { return s.nombre; }).join(", ") : "Ninguno") +
+      "</span></div>";
+
+    document.getElementById("resumen-contenido").innerHTML = html;
+    mostrarPantalla("pantalla-resumen");
+  }
+
+  function volverAlMapaDesdeResumen() {
+    visita = null;
+    tiendaSeleccionadaId = null;
+    renderizarMapa();
+    mostrarPantalla("pantalla-mapa");
+    mostrarNotificacionSiHayDisponibles();
+  }
+
+  renderizarMapa();
+  mostrarNotificacionSiHayDisponibles();
+</script>
+
+</body>
+</html>
