@@ -430,6 +430,25 @@
     border-radius: 8px;
   }
 
+  /* ---------- Botón flotante de planograma ---------- */
+
+  .fab-planograma {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    z-index: 35;
+    border: none;
+    background: var(--azul-oscuro);
+    color: #fff;
+    font-size: 0.86rem;
+    font-weight: 700;
+    padding: 12px 18px;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.28);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
   /* ---------- Visor de planograma (modal) ---------- */
 
   .visor-planograma {
@@ -702,19 +721,19 @@
           </div>
 
           <div class="tarjeta-app">
+            <h3>📐 Consulta el planograma</h3>
+            <p class="explicacion">Revisa el planograma oficial de la exhibición antes de continuar.</p>
+            <button id="btn-planograma" class="boton boton-primario" onclick="abrirPlanograma()">👁️ Ver planograma</button>
+            <p id="estado-planograma" class="estado-ok oculto">✅ Planograma revisado</p>
+          </div>
+
+          <div class="tarjeta-app">
             <h3>📷 Foto del "Antes"</h3>
             <p class="explicacion">Fotografía cómo está la exhibición antes de tocar nada.</p>
             <input type="file" id="input-foto-antes" class="oculto" accept="image/*" capture="environment" onchange="guardarFoto('antes', this)">
             <button id="btn-foto-antes" class="boton boton-primario" onclick="activarInputFoto('antes')">Tomar foto "Antes"</button>
             <p id="estado-foto-antes" class="estado-ok oculto">✅ Foto "Antes" guardada</p>
             <img id="preview-foto-antes" class="foto-preview oculto" alt="Foto &quot;Antes&quot; de la exhibición">
-          </div>
-
-          <div class="tarjeta-app">
-            <h3>📐 Consulta el planograma</h3>
-            <p class="explicacion">Revisa el planograma oficial de la exhibición antes de chequear los productos.</p>
-            <button id="btn-planograma" class="boton boton-primario" onclick="abrirPlanograma()">👁️ Ver planograma</button>
-            <p id="estado-planograma" class="estado-ok oculto">✅ Planograma revisado</p>
           </div>
 
           <div class="tarjeta-app">
@@ -788,6 +807,9 @@
       </section>
 
     </main>
+
+    <!-- Botón flotante para reabrir el planograma durante todo el checklist -->
+    <button id="fab-planograma" class="fab-planograma oculto" onclick="abrirPlanograma()">📐 Ver Planograma</button>
 
     <!-- Visor de planograma (modal a pantalla completa dentro del teléfono) -->
     <div class="visor-planograma oculto" id="visor-planograma">
@@ -890,6 +912,7 @@
     document.getElementById("subtitulo-header").textContent = esFormulario
       ? "Registrando visita en curso"
       : "App Mercaderistas ARMI";
+    document.getElementById("fab-planograma").classList.toggle("oculto", !esFormulario);
   }
 
   function renderizarMapa() {
