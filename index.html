@@ -719,7 +719,7 @@
 
           <div class="tarjeta-app">
             <h3>🔍 Revisión de inventario</h3>
-            <p class="explicacion">Verifica si la cantidad exhibida coincide con el planograma en cada producto.</p>
+            <p class="explicacion">Verifica si cada producto está exhibido correctamente según el planograma.</p>
             <div id="lista-skus"></div>
           </div>
 
@@ -809,6 +809,7 @@
     <p class="direccion" id="hoja-direccion">Dirección</p>
     <span class="hoja-estado" id="hoja-estado">Sin visita asignada</span>
     <div class="hoja-dato"><span>Marca / proveedor</span><span id="hoja-marca"></span></div>
+    <div class="hoja-dato"><span>Categoría</span><span id="hoja-categoria"></span></div>
     <div class="hoja-dato"><span>Planograma</span><span id="hoja-planograma"></span></div>
     <div class="hoja-botones">
       <button class="boton boton-secundario boton-grande" onclick="cerrarHoja()">Cerrar</button>
@@ -824,22 +825,22 @@
 
   var tiendas = [
     {
-      id: 1, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Laboratorios Vitalis",
-      planograma: "Frentillo RX 3", x: 22, y: 32, estado: "disponible",
-      planogramaAbrirUrl: "https://drive.google.com/file/d/1ZfsYjkFJcth-Ot_bPKZqIrL04ep3IbkQ/view?usp=drive_link",
-      planogramaEmbedUrl: "https://drive.google.com/file/d/1ZfsYjkFJcth-Ot_bPKZqIrL04ep3IbkQ/preview"
+      id: 1, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Colgate", categoria: "Cuidado Personal",
+      planograma: "Parrillera Trade CPA3 Izquierda", x: 22, y: 32, estado: "disponible",
+      planogramaAbrirUrl: "https://drive.google.com/file/d/1gXF4UXCZxK3HEaIstR09UZsODuEGdfA4/view?usp=drive_link",
+      planogramaEmbedUrl: "https://drive.google.com/file/d/1gXF4UXCZxK3HEaIstR09UZsODuEGdfA4/preview"
     },
     {
-      id: 2, nombre: "Farmatodo El Rosal", direccion: "Calle Madrid, El Rosal", marca: "Coca-Cola",
-      planograma: "Cabezal Frío/Caliente Coca-Cola", x: 58, y: 58, estado: "disponible",
-      planogramaAbrirUrl: "https://firebasestorage.googleapis.com/v0/b/super-app-de-operaciones.firebasestorage.app/o/planograms-trade%2FVE%2F1CN9wnXAYvJ4g13FTBxExMkSkCsnfjDpF.pdf?alt=media&token=c14f99de-9423-4cfc-b182-14b32e2ebd49",
-      planogramaEmbedUrl: "https://firebasestorage.googleapis.com/v0/b/super-app-de-operaciones.firebasestorage.app/o/planograms-trade%2FVE%2F1CN9wnXAYvJ4g13FTBxExMkSkCsnfjDpF.pdf?alt=media&token=c14f99de-9423-4cfc-b182-14b32e2ebd49"
+      id: 2, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Polar Procter PPV", categoria: "Cuidado Personal",
+      planograma: "Ristra", x: 58, y: 58, estado: "disponible",
+      planogramaAbrirUrl: "https://drive.google.com/file/d/1PnhuaqHUUmw-ZbnSyz3k2RwGFrnQukQg/view?usp=drive_link",
+      planogramaEmbedUrl: "https://drive.google.com/file/d/1PnhuaqHUUmw-ZbnSyz3k2RwGFrnQukQg/preview"
     },
     {
-      id: 3, nombre: "Farmatodo Chacao", direccion: "Av. Francisco de Miranda, Chacao", marca: "Cuidado del Bebé",
-      planograma: "Mesón de Pañales", x: 80, y: 22, estado: "disponible",
-      planogramaAbrirUrl: "https://drive.google.com/file/d/1C6R4XB_hDFwB27-WnJy_62eBrFBqKnVa/view?usp=drive_link",
-      planogramaEmbedUrl: "https://drive.google.com/file/d/1C6R4XB_hDFwB27-WnJy_62eBrFBqKnVa/preview"
+      id: 3, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Coca-Cola FEMSA de Venezuela", categoria: "Comestibles",
+      planograma: "Cabezal Frío/Caliente Coca-Cola", x: 80, y: 22, estado: "disponible",
+      planogramaAbrirUrl: "https://drive.google.com/file/d/1CN9wnXAYvJ4g13FTBxExMkSkCsnfjDpF/view?usp=drive_link",
+      planogramaEmbedUrl: "https://drive.google.com/file/d/1CN9wnXAYvJ4g13FTBxExMkSkCsnfjDpF/preview"
     }
   ];
 
@@ -849,11 +850,9 @@
   var notificacionTimeoutId = null;
 
   var skus = [
-    { id: 1, nombre: "Multivitamínico x30 tabletas", cantidad: "Debe haber 12 unidades exhibidas" },
-    { id: 2, nombre: "Vitamina C 1g x10 sobres", cantidad: "Debe haber 10 unidades exhibidas" },
-    { id: 3, nombre: "Complejo B x60 cápsulas", cantidad: "Debe haber 8 unidades exhibidas" },
-    { id: 4, nombre: "Omega 3 x60 cápsulas", cantidad: "Debe haber 6 unidades exhibidas" },
-    { id: 5, nombre: "Colágeno hidrolizado x300g", cantidad: "Debe haber 5 unidades exhibidas" }
+    { id: 1, nombre: "Producto 1" },
+    { id: 2, nombre: "Producto 2" },
+    { id: 3, nombre: "Producto 3" }
   ];
 
   var motivos = {
@@ -905,7 +904,7 @@
 
       marcador.innerHTML =
         '<button class="pin ' + tienda.estado + '" onclick="tocarPin(' + tienda.id + ')">' + iconosPin[tienda.estado] + "</button>" +
-        '<div class="marcador-nombre">' + tienda.nombre + "</div>";
+        '<div class="marcador-nombre">' + tienda.planograma + "</div>";
 
       mapa.appendChild(marcador);
     });
@@ -926,6 +925,7 @@
     document.getElementById("hoja-nombre").textContent = tienda.nombre;
     document.getElementById("hoja-direccion").textContent = tienda.direccion;
     document.getElementById("hoja-marca").textContent = tienda.marca;
+    document.getElementById("hoja-categoria").textContent = tienda.categoria;
     document.getElementById("hoja-planograma").textContent = tienda.planograma;
     document.getElementById("hoja-estado").textContent =
       tienda.estado === "completada" ? "Visita completada ✅" : "Sin visita asignada";
@@ -960,7 +960,7 @@
     var tienda = tiendas.find(function (t) { return t.id === id; });
 
     document.getElementById("notificacion-tienda").textContent = tienda.nombre;
-    document.getElementById("notificacion-marca").textContent = tienda.marca;
+    document.getElementById("notificacion-marca").textContent = tienda.planograma + " — " + tienda.marca;
 
     var noti = document.getElementById("notificacion");
     noti.classList.remove("oculto");
@@ -1001,7 +1001,8 @@
   function iniciarChecklist(tienda) {
     visita = visitaVacia();
     document.getElementById("form-tienda-nombre").textContent = tienda.nombre;
-    document.getElementById("form-tienda-detalle").textContent = tienda.marca + " · Planograma: " + tienda.planograma;
+    document.getElementById("form-tienda-detalle").textContent =
+      tienda.categoria + " · " + tienda.marca + " · Planograma: " + tienda.planograma;
 
     renderizarMensajeGerente(tienda);
     renderizarSkus();
@@ -1023,7 +1024,7 @@
       var fila = document.createElement("div");
       fila.className = "sku-fila";
       fila.innerHTML =
-        '<div class="sku-info"><strong>' + sku.nombre + '</strong><span>' + sku.cantidad + '</span></div>' +
+        '<div class="sku-info"><strong>' + sku.nombre + "</strong></div>" +
         '<div class="sku-switch">' +
         '<button class="switch-btn si" onclick="marcarSku(' + sku.id + ", 'si')\">Sí</button>" +
         '<button class="switch-btn no" onclick="marcarSku(' + sku.id + ", 'no')\">No</button>" +
@@ -1186,7 +1187,7 @@
       html += '<div class="resumen-fila"><span>Motivo de la observación</span><span>' + motivos[visita.motivo] + " " + visita.motivo + "</span></div>";
     }
 
-    html += '<div class="resumen-fila"><span>Productos con cantidad incorrecta</span><span>' +
+    html += '<div class="resumen-fila"><span>Productos con novedad</span><span>' +
       (skusConFalla.length ? skusConFalla.map(function (s) { return s.nombre; }).join(", ") : "Ninguno") +
       "</span></div>";
 
