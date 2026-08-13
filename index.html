@@ -410,6 +410,74 @@
     color: var(--verde);
   }
 
+  .mensaje-gerente {
+    margin: 0 0 12px;
+    font-size: 0.84rem;
+    color: var(--texto);
+    background: var(--azul-suave);
+    border-left: 3px solid var(--azul);
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+
+  /* ---------- Visor de planograma (modal) ---------- */
+
+  .visor-planograma {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .visor-planograma-encabezado {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .visor-planograma-encabezado h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .visor-planograma-cerrar {
+    border: none;
+    background: var(--gris-suave);
+    color: var(--texto);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .visor-planograma iframe {
+    flex: 1;
+    width: 100%;
+    border: none;
+  }
+
+  .visor-planograma-pie {
+    flex-shrink: 0;
+    padding: 10px 16px;
+    text-align: center;
+    border-top: 1px solid var(--borde);
+  }
+
+  .visor-planograma-pie a {
+    font-size: 0.85rem;
+    color: var(--azul-oscuro);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
   .oculto { display: none !important; }
 
   .sku-fila {
@@ -599,10 +667,25 @@
           </div>
 
           <div class="tarjeta-app">
+            <h3>🗣️ Informa al gerente o subgerente</h3>
+            <p class="explicacion">Antes de comenzar, avisa que llegaste, qué vas a hacer y qué exhibición vas a revisar.</p>
+            <p id="mensaje-gerente" class="mensaje-gerente"></p>
+            <button id="btn-gerente" class="boton boton-primario" onclick="informarGerente()">Notificar al gerente/subgerente</button>
+            <p id="estado-gerente" class="estado-ok oculto">✅ Gerente/subgerente informado</p>
+          </div>
+
+          <div class="tarjeta-app">
             <h3>📷 Foto del "Antes"</h3>
             <p class="explicacion">Fotografía cómo está la exhibición antes de tocar nada.</p>
             <button id="btn-foto-antes" class="boton boton-primario" onclick="tomarFoto('antes')">Tomar foto "Antes"</button>
             <p id="estado-foto-antes" class="estado-ok oculto">✅ Foto "Antes" guardada</p>
+          </div>
+
+          <div class="tarjeta-app">
+            <h3>📐 Consulta el planograma</h3>
+            <p class="explicacion">Revisa el planograma oficial de la exhibición antes de chequear los productos.</p>
+            <button id="btn-planograma" class="boton boton-primario" onclick="abrirPlanograma()">👁️ Ver planograma</button>
+            <p id="estado-planograma" class="estado-ok oculto">✅ Planograma revisado</p>
           </div>
 
           <div class="tarjeta-app">
@@ -674,6 +757,18 @@
       </section>
 
     </main>
+
+    <!-- Visor de planograma (modal a pantalla completa dentro del teléfono) -->
+    <div class="visor-planograma oculto" id="visor-planograma">
+      <div class="visor-planograma-encabezado">
+        <h3 id="visor-planograma-titulo">Planograma</h3>
+        <button class="visor-planograma-cerrar" onclick="cerrarPlanograma()">✕</button>
+      </div>
+      <iframe id="iframe-planograma" src="" title="Planograma"></iframe>
+      <div class="visor-planograma-pie">
+        <a id="link-planograma-nueva-pestana" href="#" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a>
+      </div>
+    </div>
   </div>
 
   <!-- Hoja inferior con el detalle de la tienda seleccionada -->
@@ -697,9 +792,24 @@
   // ---------------------------------------------------------------
 
   var tiendas = [
-    { id: 1, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Laboratorios Vitalis", planograma: "Vitaminas — Cabecera Pasillo 3", x: 22, y: 32, estado: "disponible" },
-    { id: 2, nombre: "Farmatodo El Rosal", direccion: "Calle Madrid, El Rosal", marca: "CuidadoPiel Derma", planograma: "Cuidado facial — Isla central", x: 58, y: 58, estado: "disponible" },
-    { id: 3, nombre: "Farmatodo Chacao", direccion: "Av. Francisco de Miranda, Chacao", marca: "NutriKids", planograma: "Nutrición infantil — Anaquel 2", x: 80, y: 22, estado: "disponible" }
+    {
+      id: 1, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Laboratorios Vitalis",
+      planograma: "Frentillo RX 3", gerente: "Gerente Carlos Pérez", x: 22, y: 32, estado: "disponible",
+      planogramaAbrirUrl: "https://drive.google.com/file/d/1ZfsYjkFJcth-Ot_bPKZqIrL04ep3IbkQ/view?usp=drive_link",
+      planogramaEmbedUrl: "https://drive.google.com/file/d/1ZfsYjkFJcth-Ot_bPKZqIrL04ep3IbkQ/preview"
+    },
+    {
+      id: 2, nombre: "Farmatodo El Rosal", direccion: "Calle Madrid, El Rosal", marca: "Coca-Cola",
+      planograma: "Cabezal Frío/Caliente Coca-Cola", gerente: "Subgerente Ana Rodríguez", x: 58, y: 58, estado: "disponible",
+      planogramaAbrirUrl: "https://firebasestorage.googleapis.com/v0/b/super-app-de-operaciones.firebasestorage.app/o/planograms-trade%2FVE%2F1CN9wnXAYvJ4g13FTBxExMkSkCsnfjDpF.pdf?alt=media&token=c14f99de-9423-4cfc-b182-14b32e2ebd49",
+      planogramaEmbedUrl: "https://firebasestorage.googleapis.com/v0/b/super-app-de-operaciones.firebasestorage.app/o/planograms-trade%2FVE%2F1CN9wnXAYvJ4g13FTBxExMkSkCsnfjDpF.pdf?alt=media&token=c14f99de-9423-4cfc-b182-14b32e2ebd49"
+    },
+    {
+      id: 3, nombre: "Farmatodo Chacao", direccion: "Av. Francisco de Miranda, Chacao", marca: "Cuidado del Bebé",
+      planograma: "Mesón de Pañales", gerente: "Gerente Luis Gómez", x: 80, y: 22, estado: "disponible",
+      planogramaAbrirUrl: "https://drive.google.com/file/d/1C6R4XB_hDFwB27-WnJy_62eBrFBqKnVa/view?usp=drive_link",
+      planogramaEmbedUrl: "https://drive.google.com/file/d/1C6R4XB_hDFwB27-WnJy_62eBrFBqKnVa/preview"
+    }
   ];
 
   var iconosPin = { disponible: "🏬", objetivo: "📍", completada: "✅" };
@@ -729,7 +839,9 @@
   function visitaVacia() {
     return {
       llegada: false,
+      gerenteInformado: false,
       fotoAntes: false,
+      planogramaRevisado: false,
       fotoDespues: false,
       skuEstados: {},
       resultado: null,
@@ -858,9 +970,16 @@
     document.getElementById("form-tienda-nombre").textContent = tienda.nombre;
     document.getElementById("form-tienda-detalle").textContent = tienda.marca + " · Planograma: " + tienda.planograma;
 
+    renderizarMensajeGerente(tienda);
     renderizarSkus();
     resetearControlesFormulario();
     mostrarPantalla("pantalla-formulario");
+  }
+
+  function renderizarMensajeGerente(tienda) {
+    document.getElementById("mensaje-gerente").textContent =
+      "Para: " + tienda.gerente + " — Llegué a la tienda para revisar/organizar la exhibición de " +
+      tienda.marca + " según el planograma \"" + tienda.planograma + "\".";
   }
 
   function renderizarSkus() {
@@ -896,6 +1015,13 @@
     validarFormulario();
   }
 
+  function informarGerente() {
+    visita.gerenteInformado = true;
+    document.getElementById("btn-gerente").disabled = true;
+    document.getElementById("estado-gerente").classList.remove("oculto");
+    validarFormulario();
+  }
+
   function tomarFoto(momento) {
     if (momento === "antes") {
       visita.fotoAntes = true;
@@ -907,6 +1033,25 @@
       document.getElementById("estado-foto-despues").classList.remove("oculto");
     }
     validarFormulario();
+  }
+
+  function abrirPlanograma() {
+    var tienda = tiendas.find(function (t) { return t.id === tiendaSeleccionadaId; });
+
+    document.getElementById("visor-planograma-titulo").textContent = tienda.planograma;
+    document.getElementById("iframe-planograma").src = tienda.planogramaEmbedUrl;
+    document.getElementById("link-planograma-nueva-pestana").href = tienda.planogramaAbrirUrl;
+    document.getElementById("visor-planograma").classList.remove("oculto");
+
+    visita.planogramaRevisado = true;
+    document.getElementById("btn-planograma").disabled = true;
+    document.getElementById("estado-planograma").classList.remove("oculto");
+    validarFormulario();
+  }
+
+  function cerrarPlanograma() {
+    document.getElementById("visor-planograma").classList.add("oculto");
+    document.getElementById("iframe-planograma").src = "";
   }
 
   function actualizarConclusion() {
@@ -932,26 +1077,33 @@
     var requiereMotivo = visita.resultado === "oportunidad" || visita.resultado === "no-implementada";
     var motivoListo = !requiereMotivo || !!visita.motivo;
 
-    var listo = visita.llegada && visita.fotoAntes && visita.fotoDespues && !!visita.resultado && motivoListo;
+    var listo = visita.llegada && visita.gerenteInformado && visita.fotoAntes && visita.planogramaRevisado &&
+      visita.fotoDespues && !!visita.resultado && motivoListo;
     document.getElementById("btn-cerrar").disabled = !listo;
   }
 
   function resetearControlesFormulario() {
     document.getElementById("btn-llegada").disabled = false;
     document.getElementById("estado-llegada").classList.add("oculto");
+    document.getElementById("btn-gerente").disabled = false;
+    document.getElementById("estado-gerente").classList.add("oculto");
     document.getElementById("btn-foto-antes").disabled = false;
     document.getElementById("estado-foto-antes").classList.add("oculto");
+    document.getElementById("btn-planograma").disabled = false;
+    document.getElementById("estado-planograma").classList.add("oculto");
     document.getElementById("btn-foto-despues").disabled = false;
     document.getElementById("estado-foto-despues").classList.add("oculto");
     document.querySelectorAll('input[name="resultado"]').forEach(function (r) { r.checked = false; });
     document.getElementById("bloque-motivo").classList.add("oculto");
     document.getElementById("select-motivo").value = "";
     document.getElementById("btn-cerrar").disabled = true;
+    cerrarPlanograma();
   }
 
   function cancelarYVolverAlMapa() {
     visita = null;
     tiendaSeleccionadaId = null;
+    cerrarPlanograma();
     mostrarPantalla("pantalla-mapa");
   }
 
