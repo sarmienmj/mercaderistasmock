@@ -410,6 +410,16 @@
     color: var(--verde);
   }
 
+  .foto-preview {
+    display: block;
+    width: 100%;
+    max-height: 170px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-top: 10px;
+    box-shadow: var(--sombra);
+  }
+
   .mensaje-gerente {
     margin: 0 0 12px;
     font-size: 0.84rem;
@@ -580,6 +590,23 @@
   .resumen-fila span:first-child { color: var(--texto-suave); }
   .resumen-fila span:last-child { font-weight: 700; text-align: right; }
 
+  .resumen-fotos {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--borde);
+  }
+
+  .resumen-foto { flex: 1; min-width: 0; }
+  .resumen-foto span { display: block; font-size: 0.78rem; color: var(--texto-suave); margin-bottom: 6px; }
+  .resumen-foto img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 10px;
+    display: block;
+  }
+
   .insignia {
     display: inline-block;
     padding: 3px 10px;
@@ -677,8 +704,10 @@
           <div class="tarjeta-app">
             <h3>📷 Foto del "Antes"</h3>
             <p class="explicacion">Fotografía cómo está la exhibición antes de tocar nada.</p>
-            <button id="btn-foto-antes" class="boton boton-primario" onclick="tomarFoto('antes')">Tomar foto "Antes"</button>
+            <input type="file" id="input-foto-antes" class="oculto" accept="image/*" capture="environment" onchange="guardarFoto('antes', this)">
+            <button id="btn-foto-antes" class="boton boton-primario" onclick="activarInputFoto('antes')">Tomar foto "Antes"</button>
             <p id="estado-foto-antes" class="estado-ok oculto">✅ Foto "Antes" guardada</p>
+            <img id="preview-foto-antes" class="foto-preview oculto" alt="Foto &quot;Antes&quot; de la exhibición">
           </div>
 
           <div class="tarjeta-app">
@@ -702,8 +731,10 @@
           <div class="tarjeta-app">
             <h3>📷 Foto del "Después"</h3>
             <p class="explicacion">Fotografía el resultado final de la exhibición.</p>
-            <button id="btn-foto-despues" class="boton boton-primario" onclick="tomarFoto('despues')">Tomar foto "Después"</button>
+            <input type="file" id="input-foto-despues" class="oculto" accept="image/*" capture="environment" onchange="guardarFoto('despues', this)">
+            <button id="btn-foto-despues" class="boton boton-primario" onclick="activarInputFoto('despues')">Tomar foto "Después"</button>
             <p id="estado-foto-despues" class="estado-ok oculto">✅ Foto "Después" guardada</p>
+            <img id="preview-foto-despues" class="foto-preview oculto" alt="Foto &quot;Después&quot; de la exhibición">
           </div>
 
           <div class="tarjeta-app">
@@ -794,19 +825,19 @@
   var tiendas = [
     {
       id: 1, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Laboratorios Vitalis",
-      planograma: "Frentillo RX 3", gerente: "Gerente Carlos Pérez", x: 22, y: 32, estado: "disponible",
+      planograma: "Frentillo RX 3", x: 22, y: 32, estado: "disponible",
       planogramaAbrirUrl: "https://drive.google.com/file/d/1ZfsYjkFJcth-Ot_bPKZqIrL04ep3IbkQ/view?usp=drive_link",
       planogramaEmbedUrl: "https://drive.google.com/file/d/1ZfsYjkFJcth-Ot_bPKZqIrL04ep3IbkQ/preview"
     },
     {
       id: 2, nombre: "Farmatodo El Rosal", direccion: "Calle Madrid, El Rosal", marca: "Coca-Cola",
-      planograma: "Cabezal Frío/Caliente Coca-Cola", gerente: "Subgerente Ana Rodríguez", x: 58, y: 58, estado: "disponible",
+      planograma: "Cabezal Frío/Caliente Coca-Cola", x: 58, y: 58, estado: "disponible",
       planogramaAbrirUrl: "https://firebasestorage.googleapis.com/v0/b/super-app-de-operaciones.firebasestorage.app/o/planograms-trade%2FVE%2F1CN9wnXAYvJ4g13FTBxExMkSkCsnfjDpF.pdf?alt=media&token=c14f99de-9423-4cfc-b182-14b32e2ebd49",
       planogramaEmbedUrl: "https://firebasestorage.googleapis.com/v0/b/super-app-de-operaciones.firebasestorage.app/o/planograms-trade%2FVE%2F1CN9wnXAYvJ4g13FTBxExMkSkCsnfjDpF.pdf?alt=media&token=c14f99de-9423-4cfc-b182-14b32e2ebd49"
     },
     {
       id: 3, nombre: "Farmatodo Chacao", direccion: "Av. Francisco de Miranda, Chacao", marca: "Cuidado del Bebé",
-      planograma: "Mesón de Pañales", gerente: "Gerente Luis Gómez", x: 80, y: 22, estado: "disponible",
+      planograma: "Mesón de Pañales", x: 80, y: 22, estado: "disponible",
       planogramaAbrirUrl: "https://drive.google.com/file/d/1C6R4XB_hDFwB27-WnJy_62eBrFBqKnVa/view?usp=drive_link",
       planogramaEmbedUrl: "https://drive.google.com/file/d/1C6R4XB_hDFwB27-WnJy_62eBrFBqKnVa/preview"
     }
@@ -841,8 +872,10 @@
       llegada: false,
       gerenteInformado: false,
       fotoAntes: false,
+      fotoAntesData: null,
       planogramaRevisado: false,
       fotoDespues: false,
+      fotoDespuesData: null,
       skuEstados: {},
       resultado: null,
       motivo: null
@@ -978,7 +1011,7 @@
 
   function renderizarMensajeGerente(tienda) {
     document.getElementById("mensaje-gerente").textContent =
-      "Para: " + tienda.gerente + " — Llegué a la tienda para revisar/organizar la exhibición de " +
+      "Para: gerente o subgerente de turno — Llegué a la tienda para revisar/organizar la exhibición de " +
       tienda.marca + " según el planograma \"" + tienda.planograma + "\".";
   }
 
@@ -1022,17 +1055,34 @@
     validarFormulario();
   }
 
-  function tomarFoto(momento) {
-    if (momento === "antes") {
-      visita.fotoAntes = true;
-      document.getElementById("btn-foto-antes").disabled = true;
-      document.getElementById("estado-foto-antes").classList.remove("oculto");
-    } else {
-      visita.fotoDespues = true;
-      document.getElementById("btn-foto-despues").disabled = true;
-      document.getElementById("estado-foto-despues").classList.remove("oculto");
-    }
-    validarFormulario();
+  function activarInputFoto(momento) {
+    document.getElementById("input-foto-" + momento).click();
+  }
+
+  function guardarFoto(momento, input) {
+    var archivo = input.files && input.files[0];
+    if (!archivo) return;
+
+    var lector = new FileReader();
+    lector.onload = function () {
+      if (momento === "antes") {
+        visita.fotoAntes = true;
+        visita.fotoAntesData = lector.result;
+      } else {
+        visita.fotoDespues = true;
+        visita.fotoDespuesData = lector.result;
+      }
+
+      document.getElementById("estado-foto-" + momento).classList.remove("oculto");
+      var preview = document.getElementById("preview-foto-" + momento);
+      preview.src = lector.result;
+      preview.classList.remove("oculto");
+
+      validarFormulario();
+    };
+    lector.readAsDataURL(archivo);
+
+    input.value = "";
   }
 
   function abrirPlanograma() {
@@ -1044,7 +1094,7 @@
     document.getElementById("visor-planograma").classList.remove("oculto");
 
     visita.planogramaRevisado = true;
-    document.getElementById("btn-planograma").disabled = true;
+    document.getElementById("btn-planograma").textContent = "👁️ Ver planograma de nuevo";
     document.getElementById("estado-planograma").classList.remove("oculto");
     validarFormulario();
   }
@@ -1089,10 +1139,16 @@
     document.getElementById("estado-gerente").classList.add("oculto");
     document.getElementById("btn-foto-antes").disabled = false;
     document.getElementById("estado-foto-antes").classList.add("oculto");
-    document.getElementById("btn-planograma").disabled = false;
+    document.getElementById("preview-foto-antes").classList.add("oculto");
+    document.getElementById("preview-foto-antes").src = "";
+    document.getElementById("input-foto-antes").value = "";
+    document.getElementById("btn-planograma").textContent = "👁️ Ver planograma";
     document.getElementById("estado-planograma").classList.add("oculto");
     document.getElementById("btn-foto-despues").disabled = false;
     document.getElementById("estado-foto-despues").classList.add("oculto");
+    document.getElementById("preview-foto-despues").classList.add("oculto");
+    document.getElementById("preview-foto-despues").src = "";
+    document.getElementById("input-foto-despues").value = "";
     document.querySelectorAll('input[name="resultado"]').forEach(function (r) { r.checked = false; });
     document.getElementById("bloque-motivo").classList.add("oculto");
     document.getElementById("select-motivo").value = "";
@@ -1133,6 +1189,11 @@
     html += '<div class="resumen-fila"><span>Productos con cantidad incorrecta</span><span>' +
       (skusConFalla.length ? skusConFalla.map(function (s) { return s.nombre; }).join(", ") : "Ninguno") +
       "</span></div>";
+
+    html += '<div class="resumen-fotos">' +
+      '<div class="resumen-foto"><span>Foto "Antes"</span><img src="' + visita.fotoAntesData + '" alt="Foto \'Antes\' de la exhibición"></div>' +
+      '<div class="resumen-foto"><span>Foto "Después"</span><img src="' + visita.fotoDespuesData + '" alt="Foto \'Después\' de la exhibición"></div>' +
+      "</div>";
 
     document.getElementById("resumen-contenido").innerHTML = html;
     mostrarPantalla("pantalla-resumen");
