@@ -324,7 +324,7 @@
   .hoja h2 { margin: 0 0 4px; font-size: 1.1rem; }
   .hoja .direccion { margin: 0 0 12px; font-size: 0.85rem; color: var(--texto-suave); }
 
-  .hoja-exhibicion {
+  .hoja-exhibicion, .historial-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -333,10 +333,20 @@
     border-top: 1px solid var(--borde);
   }
 
-  .hoja-exhibicion:first-child { border-top: none; }
+  .hoja-exhibicion:first-child, .historial-item:first-child { border-top: none; }
 
-  .hoja-exhibicion-info strong { display: block; font-size: 0.9rem; }
-  .hoja-exhibicion-info span { display: block; font-size: 0.78rem; color: var(--texto-suave); margin-top: 2px; }
+  .historial-item { cursor: pointer; }
+  .historial-item:active { background: var(--fondo); }
+
+  .item-texto strong { display: block; font-size: 0.9rem; }
+  .item-texto span { display: block; font-size: 0.78rem; color: var(--texto-suave); margin-top: 2px; }
+
+  .historial-vacio {
+    text-align: center;
+    color: var(--texto-suave);
+    font-size: 0.9rem;
+    padding: 32px 12px;
+  }
 
   .hoja-botones {
     display: flex;
@@ -433,9 +443,9 @@
     border-radius: 8px;
   }
 
-  /* ---------- Botón flotante de planograma ---------- */
+  /* ---------- Botones flotantes ---------- */
 
-  .fab-planograma {
+  .fab {
     position: absolute;
     right: 18px;
     bottom: 18px;
@@ -537,14 +547,14 @@
     transition: width 0.2s ease;
   }
 
-  .visor-skus-cuerpo {
+  .modal-cuerpo {
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 4px 16px 16px;
   }
 
-  .visor-skus-pie {
+  .modal-pie {
     flex-shrink: 0;
     padding: 12px 16px;
     border-top: 1px solid var(--borde);
@@ -888,7 +898,10 @@
     </main>
 
     <!-- Botón flotante para reabrir el planograma durante todo el checklist -->
-    <button id="fab-planograma" class="fab-planograma oculto" onclick="abrirPlanograma()">📐 Ver Planograma</button>
+    <button id="fab-planograma" class="fab oculto" onclick="abrirPlanograma()">📐 Ver Planograma</button>
+
+    <!-- Botón flotante para ver el historial de visitas realizadas -->
+    <button id="fab-historial" class="fab oculto" onclick="abrirHistorial()">📋 Visitas</button>
 
     <!-- Visor de planograma (modal a pantalla completa dentro del teléfono) -->
     <div class="modal-pantalla visor-planograma oculto" id="visor-planograma">
@@ -912,9 +925,30 @@
         <button class="modal-cerrar" onclick="cerrarSkus()">✕</button>
       </div>
       <div class="visor-skus-barra"><div class="visor-skus-barra-relleno" id="visor-skus-barra-relleno"></div></div>
-      <div class="visor-skus-cuerpo" id="lista-skus"></div>
-      <div class="visor-skus-pie">
+      <div class="modal-cuerpo" id="lista-skus"></div>
+      <div class="modal-pie">
         <button class="boton boton-primario boton-grande" onclick="cerrarSkus()">Listo</button>
+      </div>
+    </div>
+
+    <!-- Historial de visitas realizadas: lista -->
+    <div class="modal-pantalla oculto" id="visor-historial">
+      <div class="modal-encabezado">
+        <h3>Visitas realizadas</h3>
+        <button class="modal-cerrar" onclick="cerrarHistorial()">✕</button>
+      </div>
+      <div class="modal-cuerpo" id="lista-historial"></div>
+    </div>
+
+    <!-- Historial de visitas realizadas: detalle -->
+    <div class="modal-pantalla oculto" id="visor-historial-detalle">
+      <div class="modal-encabezado">
+        <h3 id="detalle-historial-titulo">Detalle de visita</h3>
+        <button class="modal-cerrar" onclick="cerrarDetalleHistorial()">✕</button>
+      </div>
+      <div class="modal-cuerpo" id="detalle-historial-contenido"></div>
+      <div class="modal-pie">
+        <button class="boton boton-secundario boton-grande" onclick="volverAListaHistorial()">‹ Volver al historial</button>
       </div>
     </div>
   </div>
@@ -1014,6 +1048,7 @@
 
   var tiendaSeleccionadaId = null;
   var visita = null; // estado de la visita en curso (en memoria)
+  var visitasRealizadas = []; // historial de visitas cerradas (en memoria, más reciente primero)
 
   function visitaVacia() {
     return {
@@ -1040,6 +1075,7 @@
       ? "Registrando visita en curso"
       : "App Mercaderistas ARMI";
     document.getElementById("fab-planograma").classList.toggle("oculto", !esFormulario);
+    document.getElementById("fab-historial").classList.toggle("oculto", id !== "pantalla-mapa");
   }
 
   function estadoAgregadoTerepaima() {
@@ -1088,7 +1124,7 @@
     var html = "";
     tiendas.forEach(function (tienda) {
       html += '<div class="hoja-exhibicion">' +
-        '<div class="hoja-exhibicion-info"><strong>' + tienda.planograma + '</strong><span>' + tienda.categoria + " · " + tienda.marca + "</span></div>" +
+        '<div class="item-texto"><strong>' + tienda.planograma + '</strong><span>' + tienda.categoria + " · " + tienda.marca + "</span></div>" +
         '<span class="hoja-estado">' + etiquetasEstadoExhibicion[tienda.estado] + "</span>" +
         "</div>";
     });
@@ -1411,34 +1447,101 @@
     "no-implementada": { texto: "No implementada", clase: "mal" }
   };
 
+  function construirResumenHtml(registro) {
+    var resultado = etiquetasResultado[registro.resultado];
+
+    var html = "";
+    html += '<div class="resumen-fila"><span>Tienda</span><span>' + registro.tiendaNombre + "</span></div>";
+    html += '<div class="resumen-fila"><span>Marca / proveedor</span><span>' + registro.marca + "</span></div>";
+    html += '<div class="resumen-fila"><span>Resultado</span><span><span class="insignia ' + resultado.clase + '">' + resultado.texto + "</span></span></div>";
+
+    if (registro.motivo) {
+      html += '<div class="resumen-fila"><span>Motivo de la observación</span><span>' + motivos[registro.motivo] + " " + registro.motivo + "</span></div>";
+    }
+
+    html += '<div class="resumen-fila"><span>Productos con novedad</span><span>' +
+      (registro.skusConFalla.length ? registro.skusConFalla.join(", ") : "Ninguno") +
+      "</span></div>";
+
+    html += '<div class="resumen-fotos">' +
+      '<div class="resumen-foto"><span>Foto "Antes"</span><img src="' + registro.fotoAntesData + '" alt="Foto \'Antes\' de la exhibición"></div>' +
+      '<div class="resumen-foto"><span>Foto "Después"</span><img src="' + registro.fotoDespuesData + '" alt="Foto \'Después\' de la exhibición"></div>' +
+      "</div>";
+
+    return html;
+  }
+
   function cerrarVisita() {
     var tienda = tiendas.find(function (t) { return t.id === tiendaSeleccionadaId; });
     tienda.estado = "completada";
     ocultarYoYRuta();
 
-    var resultado = etiquetasResultado[visita.resultado];
-    var skusConFalla = tienda.skus.filter(function (s) { return visita.skuEstados[s.id] === "no"; });
+    var skusConFalla = tienda.skus.filter(function (s) { return visita.skuEstados[s.id] === "no"; })
+      .map(function (s) { return s.nombre; });
 
-    var html = "";
-    html += '<div class="resumen-fila"><span>Tienda</span><span>' + tienda.nombre + "</span></div>";
-    html += '<div class="resumen-fila"><span>Marca / proveedor</span><span>' + tienda.marca + "</span></div>";
-    html += '<div class="resumen-fila"><span>Resultado</span><span><span class="insignia ' + resultado.clase + '">' + resultado.texto + "</span></span></div>";
+    var registro = {
+      id: tienda.id,
+      tiendaNombre: tienda.nombre,
+      marca: tienda.marca,
+      categoria: tienda.categoria,
+      planograma: tienda.planograma,
+      resultado: visita.resultado,
+      motivo: visita.motivo,
+      skusConFalla: skusConFalla,
+      fotoAntesData: visita.fotoAntesData,
+      fotoDespuesData: visita.fotoDespuesData
+    };
+    visitasRealizadas.unshift(registro);
 
-    if (visita.motivo) {
-      html += '<div class="resumen-fila"><span>Motivo de la observación</span><span>' + motivos[visita.motivo] + " " + visita.motivo + "</span></div>";
+    document.getElementById("resumen-contenido").innerHTML = construirResumenHtml(registro);
+    mostrarPantalla("pantalla-resumen");
+  }
+
+  function abrirHistorial() {
+    renderizarHistorial();
+    document.getElementById("visor-historial").classList.remove("oculto");
+  }
+
+  function cerrarHistorial() {
+    document.getElementById("visor-historial").classList.add("oculto");
+  }
+
+  function renderizarHistorial() {
+    var lista = document.getElementById("lista-historial");
+
+    if (!visitasRealizadas.length) {
+      lista.innerHTML = '<p class="historial-vacio">Aún no has completado ninguna visita.</p>';
+      return;
     }
 
-    html += '<div class="resumen-fila"><span>Productos con novedad</span><span>' +
-      (skusConFalla.length ? skusConFalla.map(function (s) { return s.nombre; }).join(", ") : "Ninguno") +
-      "</span></div>";
+    lista.innerHTML = "";
+    visitasRealizadas.forEach(function (registro) {
+      var resultado = etiquetasResultado[registro.resultado];
+      var item = document.createElement("div");
+      item.className = "historial-item";
+      item.setAttribute("onclick", "verDetalleHistorial(" + registro.id + ")");
+      item.innerHTML =
+        '<div class="item-texto"><strong>' + registro.planograma + '</strong><span>' + registro.categoria + " · " + registro.marca + "</span></div>" +
+        '<span class="insignia ' + resultado.clase + '">' + resultado.texto + "</span>";
+      lista.appendChild(item);
+    });
+  }
 
-    html += '<div class="resumen-fotos">' +
-      '<div class="resumen-foto"><span>Foto "Antes"</span><img src="' + visita.fotoAntesData + '" alt="Foto \'Antes\' de la exhibición"></div>' +
-      '<div class="resumen-foto"><span>Foto "Después"</span><img src="' + visita.fotoDespuesData + '" alt="Foto \'Después\' de la exhibición"></div>' +
-      "</div>";
+  function verDetalleHistorial(id) {
+    var registro = visitasRealizadas.find(function (r) { return r.id === id; });
+    document.getElementById("detalle-historial-titulo").textContent = registro.planograma;
+    document.getElementById("detalle-historial-contenido").innerHTML = construirResumenHtml(registro);
+    document.getElementById("visor-historial").classList.add("oculto");
+    document.getElementById("visor-historial-detalle").classList.remove("oculto");
+  }
 
-    document.getElementById("resumen-contenido").innerHTML = html;
-    mostrarPantalla("pantalla-resumen");
+  function volverAListaHistorial() {
+    document.getElementById("visor-historial-detalle").classList.add("oculto");
+    document.getElementById("visor-historial").classList.remove("oculto");
+  }
+
+  function cerrarDetalleHistorial() {
+    document.getElementById("visor-historial-detalle").classList.add("oculto");
   }
 
   function volverAlMapaDesdeResumen() {
