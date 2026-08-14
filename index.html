@@ -150,13 +150,14 @@
 
   .hoja-estado {
     display: inline-block;
-    margin: 0 0 12px;
+    flex-shrink: 0;
     font-size: 0.8rem;
     font-weight: 700;
     padding: 4px 10px;
     border-radius: 999px;
     background: var(--gris-suave);
     color: var(--texto-suave);
+    white-space: nowrap;
   }
 
   .mapa-aviso {
@@ -323,17 +324,19 @@
   .hoja h2 { margin: 0 0 4px; font-size: 1.1rem; }
   .hoja .direccion { margin: 0 0 12px; font-size: 0.85rem; color: var(--texto-suave); }
 
-  .hoja-dato {
+  .hoja-exhibicion {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 10px;
-    font-size: 0.88rem;
-    padding: 8px 0;
+    padding: 10px 0;
     border-top: 1px solid var(--borde);
   }
 
-  .hoja-dato span:first-child { color: var(--texto-suave); }
-  .hoja-dato span:last-child { font-weight: 600; text-align: right; }
+  .hoja-exhibicion:first-child { border-top: none; }
+
+  .hoja-exhibicion-info strong { display: block; font-size: 0.9rem; }
+  .hoja-exhibicion-info span { display: block; font-size: 0.78rem; color: var(--texto-suave); margin-top: 2px; }
 
   .hoja-botones {
     display: flex;
@@ -449,9 +452,9 @@
     white-space: nowrap;
   }
 
-  /* ---------- Visor de planograma (modal) ---------- */
+  /* ---------- Modal a pantalla completa (base compartida) ---------- */
 
-  .visor-planograma {
+  .modal-pantalla {
     position: absolute;
     inset: 0;
     background: #fff;
@@ -460,7 +463,7 @@
     flex-direction: column;
   }
 
-  .visor-planograma-encabezado {
+  .modal-encabezado {
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -470,12 +473,12 @@
     border-bottom: 1px solid var(--borde);
   }
 
-  .visor-planograma-encabezado h3 {
+  .modal-encabezado h3 {
     margin: 0;
     font-size: 1rem;
   }
 
-  .visor-planograma-cerrar {
+  .modal-cerrar {
     border: none;
     background: var(--gris-suave);
     color: var(--texto);
@@ -486,6 +489,8 @@
     cursor: pointer;
     flex-shrink: 0;
   }
+
+  /* ---------- Visor de planograma ---------- */
 
   .visor-planograma iframe {
     flex: 1;
@@ -505,6 +510,79 @@
     color: var(--azul-oscuro);
     font-weight: 600;
     text-decoration: none;
+  }
+
+  /* ---------- Visor de checklist de productos (modal) ---------- */
+
+  .visor-skus-subtitulo {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: var(--texto-suave);
+  }
+
+  .visor-skus-barra {
+    flex-shrink: 0;
+    height: 6px;
+    background: var(--gris-suave);
+    margin: 0 16px;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .visor-skus-barra-relleno {
+    height: 100%;
+    width: 0%;
+    background: var(--azul);
+    border-radius: 999px;
+    transition: width 0.2s ease;
+  }
+
+  .visor-skus-cuerpo {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 16px 16px;
+  }
+
+  .visor-skus-pie {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    border-top: 1px solid var(--borde);
+  }
+
+  .sku-grupo-titulo {
+    position: sticky;
+    top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--fondo);
+    padding: 8px 10px;
+    margin: 14px 0 4px;
+    border-radius: 8px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--azul-oscuro);
+  }
+
+  .sku-grupo-titulo:first-child { margin-top: 0; }
+
+  .sku-grupo-contador {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--texto-suave);
+    background: var(--tarjeta);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  .skus-resumen {
+    margin: 0 0 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--texto-suave);
   }
 
   .oculto { display: none !important; }
@@ -739,7 +817,8 @@
           <div class="tarjeta-app">
             <h3>🔍 Revisión de inventario</h3>
             <p class="explicacion">Verifica si cada producto está exhibido correctamente según el planograma.</p>
-            <div id="lista-skus"></div>
+            <p id="skus-resumen" class="skus-resumen">0 de 0 productos revisados</p>
+            <button id="btn-abrir-skus" class="boton boton-primario" onclick="abrirSkus()">🧾 Revisar productos</button>
           </div>
 
           <div class="tarjeta-app">
@@ -812,27 +891,40 @@
     <button id="fab-planograma" class="fab-planograma oculto" onclick="abrirPlanograma()">📐 Ver Planograma</button>
 
     <!-- Visor de planograma (modal a pantalla completa dentro del teléfono) -->
-    <div class="visor-planograma oculto" id="visor-planograma">
-      <div class="visor-planograma-encabezado">
+    <div class="modal-pantalla visor-planograma oculto" id="visor-planograma">
+      <div class="modal-encabezado">
         <h3 id="visor-planograma-titulo">Planograma</h3>
-        <button class="visor-planograma-cerrar" onclick="cerrarPlanograma()">✕</button>
+        <button class="modal-cerrar" onclick="cerrarPlanograma()">✕</button>
       </div>
       <iframe id="iframe-planograma" src="" title="Planograma"></iframe>
       <div class="visor-planograma-pie">
         <a id="link-planograma-nueva-pestana" href="#" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a>
       </div>
     </div>
+
+    <!-- Visor de checklist de productos (modal a pantalla completa dentro del teléfono) -->
+    <div class="modal-pantalla visor-skus oculto" id="visor-skus">
+      <div class="modal-encabezado">
+        <div>
+          <h3>Revisión de inventario</h3>
+          <p class="visor-skus-subtitulo" id="visor-skus-progreso">0 de 0 revisados</p>
+        </div>
+        <button class="modal-cerrar" onclick="cerrarSkus()">✕</button>
+      </div>
+      <div class="visor-skus-barra"><div class="visor-skus-barra-relleno" id="visor-skus-barra-relleno"></div></div>
+      <div class="visor-skus-cuerpo" id="lista-skus"></div>
+      <div class="visor-skus-pie">
+        <button class="boton boton-primario boton-grande" onclick="cerrarSkus()">Listo</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Hoja inferior con el detalle de la tienda seleccionada -->
+  <!-- Hoja inferior con las exhibiciones de la tienda seleccionada -->
   <div class="hoja oculto" id="hoja-tienda">
     <div class="hoja-manija"></div>
     <h2 id="hoja-nombre">Tienda</h2>
     <p class="direccion" id="hoja-direccion">Dirección</p>
-    <span class="hoja-estado" id="hoja-estado">Sin visita asignada</span>
-    <div class="hoja-dato"><span>Marca / proveedor</span><span id="hoja-marca"></span></div>
-    <div class="hoja-dato"><span>Categoría</span><span id="hoja-categoria"></span></div>
-    <div class="hoja-dato"><span>Planograma</span><span id="hoja-planograma"></span></div>
+    <div id="hoja-exhibiciones"></div>
     <div class="hoja-botones">
       <button class="boton boton-secundario boton-grande" onclick="cerrarHoja()">Cerrar</button>
     </div>
@@ -847,35 +939,70 @@
 
   var tiendas = [
     {
-      id: 1, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Colgate", categoria: "Cuidado Personal",
-      planograma: "Parrillera Trade CPA3 Izquierda", x: 22, y: 32, estado: "disponible",
-      planogramaAbrirUrl: "https://drive.google.com/file/d/1gXF4UXCZxK3HEaIstR09UZsODuEGdfA4/view?usp=drive_link",
-      planogramaEmbedUrl: "https://drive.google.com/file/d/1gXF4UXCZxK3HEaIstR09UZsODuEGdfA4/preview"
+      id: 1, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Laboratorios Fisa, C.A. PPV", categoria: "Cuidado Personal",
+      planograma: "Cabezal Trade CPA3", estado: "disponible",
+      planogramaAbrirUrl: "https://drive.google.com/file/d/1MAZOlinjyYbuzcZ328WtdyBXb7zOWotF/view?usp=drive_link",
+      planogramaEmbedUrl: "https://drive.google.com/file/d/1MAZOlinjyYbuzcZ328WtdyBXb7zOWotF/preview",
+      skus: [
+        { id: 113367360, nombre: "Acondicionador Every Night Bio Te Verde Y Aloe 365Ml" },
+        { id: 113363393, nombre: "Champu Every Night Bio Te verde Y Aloe 365Ml" },
+        { id: 113366375, nombre: "Acondicionador Every Night Bio De Coco 365Ml" },
+        { id: 113364450, nombre: "Acondicionador Every Night Bio Extracto De Frutas 365Ml" },
+        { id: 113366383, nombre: "Acondicionador Every Night Cacao Y Frutos 365Ml" },
+        { id: 113366391, nombre: "Acondicionador Every Night Cereales Multiact 365Ml" },
+        { id: 113364370, nombre: "Champu Every Night Bio Coco 365Ml" },
+        { id: 113363385, nombre: "Champu Every Night Bio Extracto De Frutas 365Ml" },
+        { id: 113364388, nombre: "Champu Every Night Cacao Y Frutos Rojos 365Ml" },
+        { id: 113364425, nombre: "Champu Every Night Cereales Multiact 365Ml" },
+        { id: 113173418, nombre: "Crema Corporal Every Night Bio Hidratacion Maxima Protectora 365Ml" },
+        { id: 113173434, nombre: "Crema Corporal Every Night Bio Hidratacion Suave 365Ml" },
+        { id: 113173400, nombre: "Crema Corporal Every Night Bio Hidratación Fresca 365Ml" },
+        { id: 113175413, nombre: "Crema Corporal Every Night Bionutrientes Cacao + Frutos Rojos 365Ml" },
+        { id: 116245536, nombre: "Crema Corporal Every Night Bionutrientes Cacao + Frutos Rojos 800Ml" },
+        { id: 112495351, nombre: "Desodorante Rollon Every Night Bio Baby Pink 90 Gr" },
+        { id: 112506356, nombre: "Desodorante Rollon Every Night Bio Naturelle 90 Gr" },
+        { id: 112506364, nombre: "Desodorante Rollon Every Night Bio Spring Fresh 90 Gr" },
+        { id: 112506372, nombre: "Desodorante Rollon Every Night Bio Spring Power 90 Gr" },
+        { id: 115006411, nombre: "Jabon En Barra Every Night Avena 3x110Gr" },
+        { id: 115005434, nombre: "Jabon En Barra Every Night Explosion Tropical 3x110Gr" },
+        { id: 115005426, nombre: "Jabon En Barra Every Night Manzana 3x110Gr" }
+      ]
     },
     {
-      id: 2, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Polar Procter PPV", categoria: "Cuidado Personal",
-      planograma: "Ristra", x: 58, y: 58, estado: "disponible",
-      planogramaAbrirUrl: "https://drive.google.com/file/d/1PnhuaqHUUmw-ZbnSyz3k2RwGFrnQukQg/view?usp=drive_link",
-      planogramaEmbedUrl: "https://drive.google.com/file/d/1PnhuaqHUUmw-ZbnSyz3k2RwGFrnQukQg/preview"
+      id: 2, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Dimassi, C.A. PPV", categoria: "Bebé",
+      planograma: "Parrillera Trade BBB5 Derecha", estado: "disponible",
+      planogramaAbrirUrl: "https://drive.google.com/file/d/1nRn02rFxapnHzUeUGNeiWmC-IsznYjTP/view?usp=drive_link",
+      planogramaEmbedUrl: "https://drive.google.com/file/d/1nRn02rFxapnHzUeUGNeiWmC-IsznYjTP/preview",
+      skus: [
+        { id: 116374645, nombre: "Acondicionador Alea Niños 350Ml" },
+        { id: 116375550, nombre: "Champu Alea Bebe Avena 400Ml" },
+        { id: 116325536, nombre: "Champu Alea Bebe Manzanilla 400Ml" },
+        { id: 116375568, nombre: "Champu Alea Niños 350Ml" },
+        { id: 116323688, nombre: "Champu Y Gel Alea 2 En 1 Bebe Avena 400Ml" },
+        { id: 116374637, nombre: "Champu Y Gel Alea 2 En 1 Bebe Lavanda 400Ml" },
+        { id: 116374653, nombre: "Colonia Alea Niñas 250Ml" },
+        { id: 116374661, nombre: "Colonia Alea Niños 250Ml" },
+        { id: 116375576, nombre: "Crema Para Peinar Alea Niños 200Ml" },
+        { id: 116323549, nombre: "Locion Alea Hidratante Bebe Avena 400Ml" }
+      ]
     },
     {
-      id: 3, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Coca-Cola FEMSA de Venezuela", categoria: "Comestibles",
-      planograma: "Cabezal Frío/Caliente Coca-Cola", x: 80, y: 22, estado: "disponible",
-      planogramaAbrirUrl: "https://drive.google.com/file/d/1CN9wnXAYvJ4g13FTBxExMkSkCsnfjDpF/view?usp=drive_link",
-      planogramaEmbedUrl: "https://drive.google.com/file/d/1CN9wnXAYvJ4g13FTBxExMkSkCsnfjDpF/preview"
+      id: 3, nombre: "Terepaima", direccion: "Av. Principal, Las Mercedes", marca: "Colgate Palmolive C.A.", categoria: "Cuidado Personal",
+      planograma: "Parrillera Trade CPA2 Izquierda", estado: "disponible",
+      planogramaAbrirUrl: "https://drive.google.com/file/d/1_ktMI7oIh4jg-uM4lYC-V0_So1gz3CtW/view?usp=drive_link",
+      planogramaEmbedUrl: "https://drive.google.com/file/d/1_ktMI7oIh4jg-uM4lYC-V0_So1gz3CtW/preview",
+      skus: [
+        { id: 116399607, nombre: "Crema Dental Colgate Max Fresh 90Ml" },
+        { id: 111108802, nombre: "Enjuague Bucal Colgate Plax Ice 250Ml" }
+      ]
     }
   ];
 
   var iconosPin = { disponible: "🏬", objetivo: "📍", completada: "✅" };
+  var posicionTerepaima = { x: 45, y: 48 };
   var posicionYo = { x: 15, y: 88 };
   var notificacionTiendaId = null;
   var notificacionTimeoutId = null;
-
-  var skus = [
-    { id: 1, nombre: "Producto 1" },
-    { id: 2, nombre: "Producto 2" },
-    { id: 3, nombre: "Producto 3" }
-  ];
 
   var motivos = {
     "Falta material promocional": "🎨",
@@ -915,43 +1042,57 @@
     document.getElementById("fab-planograma").classList.toggle("oculto", !esFormulario);
   }
 
+  function estadoAgregadoTerepaima() {
+    if (tiendas.some(function (t) { return t.estado === "objetivo"; })) return "objetivo";
+    if (tiendas.every(function (t) { return t.estado === "completada"; })) return "completada";
+    return "disponible";
+  }
+
   function renderizarMapa() {
     var mapa = document.getElementById("mapa");
     document.querySelectorAll(".marcador").forEach(function (el) { el.remove(); });
 
-    tiendas.forEach(function (tienda) {
-      var marcador = document.createElement("div");
-      marcador.className = "marcador";
-      marcador.style.left = tienda.x + "%";
-      marcador.style.top = tienda.y + "%";
+    var estado = estadoAgregadoTerepaima();
+    var marcador = document.createElement("div");
+    marcador.className = "marcador";
+    marcador.style.left = posicionTerepaima.x + "%";
+    marcador.style.top = posicionTerepaima.y + "%";
 
-      marcador.innerHTML =
-        '<button class="pin ' + tienda.estado + '" onclick="tocarPin(' + tienda.id + ')">' + iconosPin[tienda.estado] + "</button>" +
-        '<div class="marcador-nombre">' + tienda.planograma + "</div>";
+    marcador.innerHTML =
+      '<button class="pin ' + estado + '" onclick="tocarPinTerepaima()">' + iconosPin[estado] + "</button>" +
+      '<div class="marcador-nombre">Terepaima</div>';
 
-      mapa.appendChild(marcador);
-    });
+    mapa.appendChild(marcador);
   }
 
-  function tocarPin(id) {
-    tiendaSeleccionadaId = id;
-    var tienda = tiendas.find(function (t) { return t.id === id; });
+  function tocarPinTerepaima() {
+    var objetivo = tiendas.find(function (t) { return t.estado === "objetivo"; });
 
-    if (tienda.estado === "objetivo") {
-      iniciarChecklist(tienda);
+    if (objetivo) {
+      tiendaSeleccionadaId = objetivo.id;
+      iniciarChecklist(objetivo);
     } else {
-      mostrarInfoTienda(tienda);
+      mostrarInfoTerepaima();
     }
   }
 
-  function mostrarInfoTienda(tienda) {
-    document.getElementById("hoja-nombre").textContent = tienda.nombre;
-    document.getElementById("hoja-direccion").textContent = tienda.direccion;
-    document.getElementById("hoja-marca").textContent = tienda.marca;
-    document.getElementById("hoja-categoria").textContent = tienda.categoria;
-    document.getElementById("hoja-planograma").textContent = tienda.planograma;
-    document.getElementById("hoja-estado").textContent =
-      tienda.estado === "completada" ? "Visita completada ✅" : "Sin visita asignada";
+  var etiquetasEstadoExhibicion = {
+    disponible: "Sin visita asignada",
+    completada: "Visita completada ✅"
+  };
+
+  function mostrarInfoTerepaima() {
+    document.getElementById("hoja-nombre").textContent = tiendas[0].nombre;
+    document.getElementById("hoja-direccion").textContent = tiendas[0].direccion;
+
+    var html = "";
+    tiendas.forEach(function (tienda) {
+      html += '<div class="hoja-exhibicion">' +
+        '<div class="hoja-exhibicion-info"><strong>' + tienda.planograma + '</strong><span>' + tienda.categoria + " · " + tienda.marca + "</span></div>" +
+        '<span class="hoja-estado">' + etiquetasEstadoExhibicion[tienda.estado] + "</span>" +
+        "</div>";
+    });
+    document.getElementById("hoja-exhibiciones").innerHTML = html;
 
     document.getElementById("hoja-tienda").classList.remove("oculto");
     requestAnimationFrame(function () {
@@ -1000,17 +1141,17 @@
     var tienda = tiendas.find(function (t) { return t.id === notificacionTiendaId; });
     tienda.estado = "objetivo";
     ocultarNotificacion();
-    mostrarYoYRuta(tienda);
+    mostrarYoYRuta(posicionTerepaima);
     renderizarMapa();
   }
 
-  function mostrarYoYRuta(tienda) {
+  function mostrarYoYRuta(destino) {
     var puntoYo = document.getElementById("marcador-yo");
     puntoYo.style.left = posicionYo.x + "%";
     puntoYo.style.top = posicionYo.y + "%";
     puntoYo.classList.remove("oculto");
 
-    var puntos = posicionYo.x + "," + posicionYo.y + " " + tienda.x + "," + posicionYo.y + " " + tienda.x + "," + tienda.y;
+    var puntos = posicionYo.x + "," + posicionYo.y + " " + destino.x + "," + posicionYo.y + " " + destino.x + "," + destino.y;
     document.getElementById("ruta-linea").setAttribute("points", puntos);
     document.getElementById("ruta-svg").classList.remove("oculto");
   }
@@ -1028,7 +1169,7 @@
       tienda.categoria + " · " + tienda.marca + " · Planograma: " + tienda.planograma;
 
     renderizarMensajeGerente(tienda);
-    renderizarSkus();
+    renderizarSkus(tienda);
     resetearControlesFormulario();
     mostrarPantalla("pantalla-formulario");
   }
@@ -1039,30 +1180,105 @@
       tienda.marca + " según el planograma \"" + tienda.planograma + "\".";
   }
 
-  function renderizarSkus() {
+  var UMBRAL_AGRUPAR_SKUS = 6;
+
+  var ETIQUETAS_TIPO_PRODUCTO = {
+    acondicionador: "Acondicionadores",
+    champu: "Champús",
+    crema: "Cremas",
+    desodorante: "Desodorantes",
+    jabon: "Jabones",
+    colonia: "Colonias",
+    locion: "Lociones",
+    enjuague: "Enjuague bucal"
+  };
+
+  function tipoProducto(nombre) {
+    var primeraPalabra = nombre.split(" ")[0].toLowerCase();
+    return ETIQUETAS_TIPO_PRODUCTO[primeraPalabra] || nombre.split(" ")[0];
+  }
+
+  function agruparSkus(tienda) {
+    if (tienda.skus.length <= UMBRAL_AGRUPAR_SKUS) {
+      return [{ titulo: null, skus: tienda.skus }];
+    }
+
+    var grupos = [];
+    var indice = {};
+    tienda.skus.forEach(function (sku) {
+      var titulo = tipoProducto(sku.nombre);
+      if (!indice[titulo]) {
+        indice[titulo] = { titulo: titulo, skus: [] };
+        grupos.push(indice[titulo]);
+      }
+      indice[titulo].skus.push(sku);
+    });
+    return grupos;
+  }
+
+  function renderizarSkus(tienda) {
     var lista = document.getElementById("lista-skus");
     lista.innerHTML = "";
 
-    skus.forEach(function (sku) {
-      var fila = document.createElement("div");
-      fila.className = "sku-fila";
-      fila.innerHTML =
-        '<div class="sku-info"><strong>' + sku.nombre + "</strong></div>" +
-        '<div class="sku-switch">' +
-        '<button class="switch-btn si" onclick="marcarSku(' + sku.id + ", 'si')\">Sí</button>" +
-        '<button class="switch-btn no" onclick="marcarSku(' + sku.id + ", 'no')\">No</button>" +
-        "</div>";
-      lista.appendChild(fila);
+    agruparSkus(tienda).forEach(function (grupo) {
+      if (grupo.titulo) {
+        var titulo = document.createElement("div");
+        titulo.className = "sku-grupo-titulo";
+        titulo.innerHTML =
+          "<span>" + grupo.titulo + '</span><span class="sku-grupo-contador" data-grupo="' + grupo.titulo + '">0/' + grupo.skus.length + "</span>";
+        lista.appendChild(titulo);
+      }
+
+      grupo.skus.forEach(function (sku) {
+        var fila = document.createElement("div");
+        fila.className = "sku-fila";
+        fila.setAttribute("data-sku-id", sku.id);
+        fila.innerHTML =
+          '<div class="sku-info"><strong>' + sku.nombre + '</strong><span>Código ' + sku.id + "</span></div>" +
+          '<div class="sku-switch">' +
+          '<button class="switch-btn si" onclick="marcarSku(' + sku.id + ", 'si')\">Sí</button>" +
+          '<button class="switch-btn no" onclick="marcarSku(' + sku.id + ", 'no')\">No</button>" +
+          "</div>";
+        lista.appendChild(fila);
+      });
+    });
+
+    actualizarProgresoSkus(tienda);
+  }
+
+  function actualizarProgresoSkus(tienda) {
+    var total = tienda.skus.length;
+    var revisados = tienda.skus.filter(function (s) { return !!visita.skuEstados[s.id]; }).length;
+
+    document.getElementById("skus-resumen").textContent = revisados + " de " + total + " productos revisados";
+    document.getElementById("visor-skus-progreso").textContent = revisados + " de " + total + " revisados";
+    document.getElementById("visor-skus-barra-relleno").style.width = (total ? Math.round((revisados / total) * 100) : 0) + "%";
+
+    agruparSkus(tienda).forEach(function (grupo) {
+      if (!grupo.titulo) return;
+      var revisadosGrupo = grupo.skus.filter(function (s) { return !!visita.skuEstados[s.id]; }).length;
+      var contador = document.querySelector('.sku-grupo-contador[data-grupo="' + grupo.titulo + '"]');
+      if (contador) contador.textContent = revisadosGrupo + "/" + grupo.skus.length;
     });
   }
 
   function marcarSku(id, valor) {
     visita.skuEstados[id] = valor;
-    var filas = document.querySelectorAll("#lista-skus .sku-fila");
-    var index = skus.findIndex(function (s) { return s.id === id; });
-    var botones = filas[index].querySelectorAll(".switch-btn");
+    var fila = document.querySelector('.sku-fila[data-sku-id="' + id + '"]');
+    var botones = fila.querySelectorAll(".switch-btn");
     botones.forEach(function (b) { b.classList.remove("activo"); });
-    filas[index].querySelector(".switch-btn." + valor).classList.add("activo");
+    fila.querySelector(".switch-btn." + valor).classList.add("activo");
+
+    var tienda = tiendas.find(function (t) { return t.id === tiendaSeleccionadaId; });
+    actualizarProgresoSkus(tienda);
+  }
+
+  function abrirSkus() {
+    document.getElementById("visor-skus").classList.remove("oculto");
+  }
+
+  function cerrarSkus() {
+    document.getElementById("visor-skus").classList.add("oculto");
   }
 
   function marcarLlegada() {
@@ -1178,12 +1394,14 @@
     document.getElementById("select-motivo").value = "";
     document.getElementById("btn-cerrar").disabled = true;
     cerrarPlanograma();
+    cerrarSkus();
   }
 
   function cancelarYVolverAlMapa() {
     visita = null;
     tiendaSeleccionadaId = null;
     cerrarPlanograma();
+    cerrarSkus();
     mostrarPantalla("pantalla-mapa");
   }
 
@@ -1199,7 +1417,7 @@
     ocultarYoYRuta();
 
     var resultado = etiquetasResultado[visita.resultado];
-    var skusConFalla = skus.filter(function (s) { return visita.skuEstados[s.id] === "no"; });
+    var skusConFalla = tienda.skus.filter(function (s) { return visita.skuEstados[s.id] === "no"; });
 
     var html = "";
     html += '<div class="resumen-fila"><span>Tienda</span><span>' + tienda.nombre + "</span></div>";
